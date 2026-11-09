@@ -1,0 +1,63 @@
+# Виртуальные окружения
+venv/
+.venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Кеши инструментов
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.cache/
+.ipynb_checkpoints/
+
+# Переменные окружения
+.env
+.env.*
+!.env.example
+
+# Локальная база и сгенерированные данные
+spl_logs.db
+*.db
+*.sqlite
+*.sqlite3
+data/detector_train.csv
+data/clean_texts.txt
+data/anomaly_texts.txt
+
+# Обученные артефакты и отчёты
+models/*.pkl
+models/metrics.json
+models/pr_curve.png
+
+# Презентационные материалы не входят в репозиторий
+/presentation/
+
+# IDE и ОС
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Логи и локальные секреты
+*.log
+.streamlit/secrets.toml

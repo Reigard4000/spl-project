@@ -1,0 +1,44 @@
+[project]
+name = "spl-project"
+version = "0.1.0"
+description = "Security & Protection Layer для защиты ML-модели от adversarial-атак"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402"]
+"src/presentation/ui/streamlit_app.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+show_error_codes = true
+exclude = ["(^|/)models/"]
+
+[[tool.mypy.overrides]]
+module = [
+    "sklearn.*",
+    "transformers.*",
+    "streamlit.*",
+    "pandas.*",
+    "uvicorn.*",
+    "torch.*",
+    "geracl.*",
+    "shap.*",
+    "lightgbm.*",
+    "matplotlib.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

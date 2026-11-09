@@ -41,9 +41,7 @@ data/detector_train.csv
 data/clean_texts.txt
 data/anomaly_texts.txt
 
-# Обученные артефакты и отчёты
-models/*.pkl
-models/metrics.json
+# Отчёт оценки (создаётся make evaluate)
 models/pr_curve.png
 
 # Презентационные материалы не входят в репозиторий

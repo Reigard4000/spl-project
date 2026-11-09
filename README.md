@@ -20,6 +20,8 @@ SPL — слой защиты между пользователем и ML-мод
 - SQLite-журнал всех решений, включая причину и объяснение блокировки.
 - Streamlit-панель: метрики, фильтры и интерактивная таблица журнала.
 - Скрипты генерации данных, обучения, оценки и расчёта метрик.
+- Обученные детекторы и `models/metrics.json` входят в репозиторий: при
+  обычном запуске обучение не требуется.
 - Тесты сервисов и API на заглушках (без скачивания transformers).
 - `ruff` и `mypy --strict` без ошибок.
 
@@ -60,8 +62,9 @@ core (Settings, logging, exceptions)
 ## Требования
 
 - Python 3.10–3.12 (рекомендуется). Проект рассчитан на Python 3.10+.
-- Доступ в интернет и место на диске для загрузки весов GeRaCl при первом
-  запросе к модели.
+- Доступ в интернет и около 600 МБ на диске для кэша весов GeRaCl. Веса
+  скачиваются при первом чистом запросе, а не при старте приложения.
+- Для установки `geracl` нужен `git`.
 
 ## Установка
 
@@ -72,27 +75,34 @@ make install
 cp .env.example .env
 ```
 
-`make install` устанавливает зависимости из `requirements.txt`.
+`make install` устанавливает основные зависимости из `requirements.txt`.
 
 ### Backend для GeRaCl
 
 `GeraclModel` сначала пробует стандартный
 `transformers.pipeline("zero-shot-classification")`. Архитектура GeRaCl не
 поддерживается стандартным pipeline, поэтому при ошибке обёртка переключается
-на официальный пакет `geracl`, если он установлен:
+на официальный пакет `geracl`, если он установлен.
+
+`run.sh` и `run.ps1` устанавливают `geracl` автоматически при первом запуске,
+если его ещё нет. Отключить установку можно флагами `--no-geracl` (Linux/macOS)
+и `-NoGeracl` (Windows). Вручную пакет ставится так:
 
 ```bash
-pip install "geracl @ git+https://github.com/deepvk/geracl" \
-  loguru pytorch-lightning torchmetrics
+make install-geracl
+# или
+pip install -r requirements-geracl.txt
 ```
 
 Пакет опционален и распространяется под Apache-2.0. Без него API вернёт
-`ModelError` с подсказкой по установке.
+`ModelError` на чистый запрос, но `/health`, `/logs` и блокировка
+adversarial/anomaly-запросов продолжат работать.
 
 ## Быстрый старт
 
-Один скрипт создаёт venv, устанавливает зависимости, генерирует данные,
-обучает детекторы и запускает API вместе с панелью:
+Один скрипт создаёт venv, устанавливает зависимости и `geracl`, использует
+обученные детекторы из репозитория, при необходимости переобучает их и
+запускает API вместе с панелью:
 
 ```bash
 ./run.sh
@@ -106,7 +116,20 @@ pip install "geracl @ git+https://github.com/deepvk/geracl" \
 ./run.sh all          # API + Streamlit (по умолчанию)
 ./run.sh --no-install # не устанавливать зависимости
 ./run.sh --no-setup   # не генерировать данные и не обучать детекторы
+./run.sh --no-geracl  # не устанавливать geracl
+./run.sh --retrain    # принудительно переобучить детекторы
 ```
+
+### Первый запуск
+
+- Создаются `venv` и зависимости; `geracl` ставится автоматически, если его
+  ещё нет.
+- Детекторы уже лежат в `models/*.pkl`, поэтому обучение пропускается.
+- Если сохранённые pkl не загружаются в текущем окружении, детекторы
+  автоматически переобучаются.
+- Данные генерируются только когда нужно обучение или `make evaluate`.
+- Модель GeRaCl скачивается при первом чистом запросе в кэш Hugging Face
+  (около 600 МБ). `/health`, `/logs` и блокировка атак работают без неё.
 
 После запуска:
 
@@ -120,15 +143,18 @@ pip install "geracl @ git+https://github.com/deepvk/geracl" \
 ### Makefile
 
 ```bash
-make data     # сгенерировать чистые, аномальные и испорченные тексты
-make train    # обучить детекторы, сохранить pkl и models/metrics.json
-make evaluate # матрица ошибок и Precision/Recall/F1 на отложенной выборке
-make metrics  # скорость и FPR на чистых текстах
-make run-api  # API на http://127.0.0.1:8000
-make run-ui   # панель на http://127.0.0.1:8501
-make test     # pytest
-make lint     # ruff + mypy
-make clean    # удалить кеши и сгенерированные артефакты
+make install-geracl # установить официальный backend geracl
+make data      # сгенерировать чистые, аномальные и испорченные тексты
+make train     # обучить детекторы, сохранить pkl и models/metrics.json
+make retrain   # удалить pkl и обучить детекторы заново
+make evaluate  # матрица ошибок и Precision/Recall/F1 на отложенной выборке
+make metrics   # скорость и FPR на чистых текстах
+make run-api   # API на http://127.0.0.1:8000
+make run-ui    # панель на http://127.0.0.1:8501
+make test      # pytest
+make lint      # ruff + mypy
+make clean     # удалить кеши, данные и отчёт, не трогая обученные детекторы
+make clean-models # удалить pkl и models/metrics.json
 ```
 
 `make train` сам вызывает `make data`. Скрипты и Makefile рассчитаны на запуск
@@ -137,15 +163,108 @@ make clean    # удалить кеши и сгенерированные арт
 ### Ручной запуск
 
 ```bash
+pip install -r requirements.txt
+pip install -r requirements-geracl.txt
+uvicorn src.presentation.api.app:create_app --factory --host 127.0.0.1 --port 8000
+PYTHONPATH=. streamlit run src/presentation/ui/streamlit_app.py
+```
+
+Детекторы уже лежат в `models/`, поэтому генерация данных и обучение не нужны.
+Для переобучения или оценки:
+
+```bash
 python data/generate_data.py
 python scripts/train_detectors.py
 python scripts/evaluate.py
-uvicorn src.presentation.api.app:create_app --factory --host 127.0.0.1 --port 8000
-PYTHONPATH=. streamlit run src/presentation/ui/streamlit_app.py
 python scripts/compute_metrics.py
 ```
 
 Также API можно запустить командой `python -m src`.
+
+## Запуск на Windows 10/11
+
+Нативно `run.sh` и `Makefile` не работают: это Unix-скрипты. Используй один
+из вариантов ниже.
+
+### WSL2 (рекомендуется)
+
+Ближе всего к Linux-окружению:
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+В Ubuntu:
+
+```bash
+sudo apt update && sudo apt install -y python3-venv git
+git clone <repo-url>
+cd spl-project
+./run.sh
+```
+
+Проект лучше клонировать в домашнюю папку WSL, а не в `/mnt/c`, иначе запуск
+будет медленнее.
+
+### Нативный Windows
+
+Нужен Python 3.10–3.12 и PowerShell 5.1+. Запуск:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+.\run.ps1
+```
+
+Если менять Execution Policy не хочется, используй обёртку:
+
+```cmd
+.\run.cmd
+```
+
+Флаги:
+
+```powershell
+.\run.ps1 api
+.\run.ps1 ui
+.\run.ps1 -NoInstall
+.\run.ps1 -NoSetup
+.\run.ps1 -NoGeracl
+.\run.ps1 -Retrain
+.\run.ps1 -PythonBin C:\Python312\python.exe
+```
+
+`run.ps1` создаёт `venv`, ставит зависимости и `geracl`, использует готовые
+детекторы из `models/`, при необходимости переобучает их и запускает API и
+панель. Если PowerShell блокирует скрипт:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+Если `geracl` не устанавливается нативно, используй WSL2. Путь к проекту
+лучше выбирать без кириллицы, например `C:\projects\spl-project`.
+
+### Ручной запуск на Windows
+
+```powershell
+py -3.12 -m venv venv
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
+.\venv\Scripts\python.exe -m pip install -r requirements-geracl.txt
+.\venv\Scripts\python.exe data/generate_data.py
+.\venv\Scripts\python.exe scripts/train_detectors.py
+```
+
+API в одном терминале:
+
+```powershell
+.\venv\Scripts\python.exe -m uvicorn src.presentation.api.app:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+Панель во втором терминале:
+
+```powershell
+.\venv\Scripts\python.exe -m streamlit run src/presentation/ui/streamlit_app.py
+```
 
 ## API
 
@@ -254,12 +373,20 @@ Adversarial-детектор объединяет TF-IDF по char n-грамм�
 признаков) с теми же 12 признаками через `FeatureUnion`, после чего использует
 LightGBM. Порог блокировки подбирается только на validation при FPR ≤ 1%.
 
-Артефакты создаются командами `make train` и `make evaluate`:
+Обученные детекторы уже входят в репозиторий:
 
 - `models/adversarial_detector.pkl`;
 - `models/anomaly_detector.pkl`;
-- `models/metrics.json`;
-- `models/pr_curve.png`.
+- `models/metrics.json`.
+
+`models/pr_curve.png` создаётся командой `make evaluate` и не нужен для
+запуска.
+
+При обычном запуске обучение не выполняется. Переобучить детекторы можно
+командами `make train`, `make retrain`, `./run.sh --retrain` или
+`.\run.ps1 -Retrain`. Если сохранённые pkl несовместимы с версиями
+scikit-learn/LightGBM в окружении, `run.sh` и `run.ps1` автоматически
+переобучают детекторы.
 
 ## Метрики
 
@@ -324,6 +451,14 @@ make test
 make lint
 ```
 
+На Windows:
+
+```powershell
+.\venv\Scripts\python.exe -m pytest
+.\venv\Scripts\python.exe -m ruff check .
+.\venv\Scripts\python.exe -m mypy src scripts data tests
+```
+
 - `pytest` — тесты `CheckService` (чистый текст, adversarial, anomaly, ошибка
   детектора, сохранение журнала) и API через `httpx.AsyncClient` (`/check`,
   `/health`, `/logs`, валидация).
@@ -339,10 +474,14 @@ make lint
 spl-project/
 ├── README.md
 ├── requirements.txt
+├── requirements-geracl.txt
 ├── pyproject.toml
 ├── .env.example
+├── .gitattributes
 ├── Makefile
 ├── run.sh
+├── run.ps1
+├── run.cmd
 ├── data/
 │   ├── generate_data.py
 │   ├── clean_texts.txt          # генерируется
@@ -350,10 +489,10 @@ spl-project/
 │   └── detector_train.csv       # генерируется
 ├── models/
 │   ├── .gitkeep
-│   ├── adversarial_detector.pkl # генерируется
-│   ├── anomaly_detector.pkl     # генерируется
-│   ├── metrics.json             # генерируется
-│   └── pr_curve.png             # генерируется
+│   ├── adversarial_detector.pkl # обученный детектор
+│   ├── anomaly_detector.pkl     # обученный детектор
+│   ├── metrics.json             # метрики обучения
+│   └── pr_curve.png             # создаётся make evaluate
 ├── src/
 │   ├── __init__.py
 │   ├── __main__.py

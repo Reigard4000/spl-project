@@ -16,17 +16,21 @@ UI_PORT="${UI_PORT:-8501}"
 MODE="all"
 SKIP_INSTALL=0
 SKIP_SETUP=0
+SKIP_GERACL=0
+RETRAIN=0
 API_PID=""
 
 usage() {
     cat <<EOF
-Использование: ./run.sh [all|api|ui] [--no-install] [--no-setup]
+Использование: ./run.sh [all|api|ui] [--no-install] [--no-setup] [--no-geracl] [--retrain]
 
   all          запустить API и Streamlit (по умолчанию)
   api          запустить только API
   ui           запустить только Streamlit
   --no-install не устанавливать зависимости
   --no-setup   не генерировать данные и не обучать детекторы
+  --no-geracl  не устанавливать официальный backend geracl
+  --retrain    переобучить детекторы даже при наличии pkl
   -h, --help   показать эту справку
 
 Переменные окружения: VENV_DIR, PYTHON_BIN, API_HOST, API_PORT, UI_HOST, UI_PORT.
@@ -43,6 +47,12 @@ for argument in "$@"; do
             ;;
         --no-setup)
             SKIP_SETUP=1
+            ;;
+        --no-geracl)
+            SKIP_GERACL=1
+            ;;
+        --retrain)
+            RETRAIN=1
             ;;
         -h|--help)
             usage
@@ -74,6 +84,11 @@ if [[ ! -x "$VENV_DIR/bin/python" ]]; then
 fi
 PYTHON="$VENV_DIR/bin/python"
 
+if ! "$PYTHON" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'; then
+    echo "Нужен Python 3.10 или новее." >&2
+    exit 1
+fi
+
 if [[ "$SKIP_INSTALL" -eq 0 ]]; then
     install_marker="$VENV_DIR/.spl_requirements"
     if [[ ! -f "$install_marker" || requirements.txt -nt "$install_marker" ]]; then
@@ -84,22 +99,87 @@ if [[ "$SKIP_INSTALL" -eq 0 ]]; then
     fi
 fi
 
-if [[ "$SKIP_SETUP" -eq 0 ]]; then
-    if [[ ! -f data/detector_train.csv ]]; then
-        echo "Генерирую данные..."
-        "$PYTHON" data/generate_data.py
+model_is_loadable() {
+    "$PYTHON" - <<'PY' >/dev/null 2>&1
+import pickle
+
+for path in ("models/adversarial_detector.pkl", "models/anomaly_detector.pkl"):
+    with open(path, "rb") as file:
+        artifacts = pickle.load(file)
+    if "model" not in artifacts:
+        raise SystemExit(1)
+PY
+}
+
+install_geracl() {
+    if "$PYTHON" -c "import geracl" >/dev/null 2>&1; then
+        return 0
     fi
-    if [[ ! -f models/adversarial_detector.pkl || ! -f models/anomaly_detector.pkl ]]; then
-        echo "Обучаю детекторы..."
-        "$PYTHON" scripts/train_detectors.py
+
+    if [[ "$SKIP_INSTALL" -eq 1 ]]; then
+        echo "Подсказка: geracl не установлен, чистые запросы вернут ModelError."
+        echo "Установи backend: make install-geracl"
+        return 0
+    fi
+
+    if [[ "$SKIP_GERACL" -eq 1 ]]; then
+        echo "Backend geracl пропущен (--no-geracl). Чистые запросы вернут ModelError."
+        return 0
+    fi
+
+    if ! command -v git >/dev/null 2>&1; then
+        echo "Для установки geracl нужен git. Чистые запросы вернут ModelError." >&2
+        return 0
+    fi
+
+    echo "Устанавливаю geracl (это может занять время)..."
+    if "$PYTHON" -m pip install -r requirements-geracl.txt; then
+        echo "geracl установлен."
+    else
+        echo "Не удалось установить geracl. Чистые запросы вернут ModelError." >&2
+    fi
+}
+
+install_geracl
+
+MODELS_READY=0
+if [[ -f models/adversarial_detector.pkl && -f models/anomaly_detector.pkl ]]; then
+    if model_is_loadable; then
+        MODELS_READY=1
     fi
 fi
 
-if ! "$PYTHON" -c "import geracl" >/dev/null 2>&1; then
-    echo "Подсказка: для архитектуры GeRaCl может понадобиться официальный backend:"
-    echo '  pip install "geracl @ git+https://github.com/deepvk/geracl" \'
-    echo "    loguru pytorch-lightning torchmetrics"
+if [[ "$RETRAIN" -eq 1 ]]; then
+    MODELS_READY=0
 fi
+
+if [[ "$SKIP_SETUP" -eq 1 ]]; then
+    if [[ "$MODELS_READY" -eq 1 ]]; then
+        echo "Использую существующие обученные детекторы."
+    else
+        echo "Внимание: --no-setup, но детекторы отсутствуют или не загружаются." >&2
+    fi
+elif [[ "$MODELS_READY" -eq 1 ]]; then
+    echo "Обученные детекторы найдены, обучение пропущено."
+else
+    if [[ "$RETRAIN" -eq 1 ]]; then
+        echo "Принудительное переобучение детекторов (--retrain)..."
+    elif [[ -f models/adversarial_detector.pkl || -f models/anomaly_detector.pkl ]]; then
+        echo "Сохранённые детекторы не загрузились, переобучаю..."
+    fi
+    if [[ ! -f data/detector_train.csv || ! -f data/anomaly_texts.txt ]]; then
+        echo "Генерирую данные..."
+        "$PYTHON" data/generate_data.py
+    fi
+    echo "Обучаю детекторы..."
+    "$PYTHON" scripts/train_detectors.py
+    if ! model_is_loadable; then
+        echo "Ошибка: обученные детекторы не загружаются." >&2
+        exit 1
+    fi
+fi
+
+echo "Модель GeRaCl загрузится при первом чистом запросе (кэш около 600 МБ)."
 
 wait_for_api() {
     local health_host="$API_HOST"

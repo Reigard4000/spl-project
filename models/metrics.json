@@ -1,0 +1,292 @@
+{
+  "generated_at": "2026-11-09T16:57:33.714059+00:00",
+  "dataset": {
+    "total": 2250,
+    "clean": 1250,
+    "adversarial": 1000,
+    "hard_negatives": 250,
+    "base_groups": 1250,
+    "train": 1345,
+    "val": 451,
+    "test": 454,
+    "categories": {
+      "certificates": 244,
+      "documents": 224,
+      "dorm": 218,
+      "exams": 232,
+      "hard_negative": 250,
+      "it": 268,
+      "payment": 236,
+      "schedule": 286,
+      "transfer": 292
+    },
+    "attack_types": {
+      "homoglyph": 250,
+      "invisible": 250,
+      "keyboard_layout": 250,
+      "typo": 250
+    }
+  },
+  "adversarial": {
+    "precision": 1.0,
+    "recall": 0.9754901960784313,
+    "f1": 0.9875930521091811,
+    "roc_auc": 0.9971764705882354,
+    "true_negatives": 250,
+    "false_positives": 0,
+    "false_negatives": 5,
+    "true_positives": 199,
+    "false_positive_rate": 0.0,
+    "threshold": 0.09346178991578329,
+    "validation": {
+      "threshold": 0.09346178991578329,
+      "false_positive_rate": 0.004,
+      "recall": 0.9651741293532339,
+      "precision": 0.9948717948717949,
+      "false_positives": 1.0,
+      "true_positives": 194.0
+    },
+    "per_attack_type": {
+      "homoglyph": {
+        "support": 48,
+        "detected": 48,
+        "missed": 0,
+        "recall": 1.0
+      },
+      "invisible": {
+        "support": 62,
+        "detected": 62,
+        "missed": 0,
+        "recall": 1.0
+      },
+      "keyboard_layout": {
+        "support": 46,
+        "detected": 46,
+        "missed": 0,
+        "recall": 1.0
+      },
+      "typo": {
+        "support": 48,
+        "detected": 43,
+        "missed": 5,
+        "recall": 0.8958333333333334
+      }
+    },
+    "per_category": {
+      "certificates": {
+        "clean_support": 22,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 22,
+        "detected": 21,
+        "recall": 0.9545454545454546
+      },
+      "documents": {
+        "clean_support": 20,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 20,
+        "detected": 19,
+        "recall": 0.95
+      },
+      "dorm": {
+        "clean_support": 27,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 27,
+        "detected": 27,
+        "recall": 1.0
+      },
+      "exams": {
+        "clean_support": 26,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 26,
+        "detected": 25,
+        "recall": 0.9615384615384616
+      },
+      "hard_negative": {
+        "clean_support": 46,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 0,
+        "detected": 0,
+        "recall": 0.0
+      },
+      "it": {
+        "clean_support": 27,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 27,
+        "detected": 27,
+        "recall": 1.0
+      },
+      "payment": {
+        "clean_support": 24,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 24,
+        "detected": 23,
+        "recall": 0.9583333333333334
+      },
+      "schedule": {
+        "clean_support": 30,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 30,
+        "detected": 29,
+        "recall": 0.9666666666666667
+      },
+      "transfer": {
+        "clean_support": 28,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 28,
+        "detected": 28,
+        "recall": 1.0
+      }
+    }
+  },
+  "anomaly": {
+    "precision": 0.9661016949152542,
+    "recall": 0.27941176470588236,
+    "f1": 0.43346007604562736,
+    "roc_auc": 0.7765098039215688,
+    "true_negatives": 248,
+    "false_positives": 2,
+    "false_negatives": 147,
+    "true_positives": 57,
+    "false_positive_rate": 0.008,
+    "per_attack_type": {
+      "homoglyph": {
+        "support": 48,
+        "detected": 14,
+        "missed": 34,
+        "recall": 0.2916666666666667
+      },
+      "invisible": {
+        "support": 62,
+        "detected": 1,
+        "missed": 61,
+        "recall": 0.016129032258064516
+      },
+      "keyboard_layout": {
+        "support": 46,
+        "detected": 42,
+        "missed": 4,
+        "recall": 0.9130434782608695
+      },
+      "typo": {
+        "support": 48,
+        "detected": 0,
+        "missed": 48,
+        "recall": 0.0
+      }
+    },
+    "per_category": {
+      "certificates": {
+        "clean_support": 22,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 22,
+        "detected": 11,
+        "recall": 0.5
+      },
+      "documents": {
+        "clean_support": 20,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 20,
+        "detected": 4,
+        "recall": 0.2
+      },
+      "dorm": {
+        "clean_support": 27,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 27,
+        "detected": 3,
+        "recall": 0.1111111111111111
+      },
+      "exams": {
+        "clean_support": 26,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 26,
+        "detected": 9,
+        "recall": 0.34615384615384615
+      },
+      "hard_negative": {
+        "clean_support": 46,
+        "false_positives": 1,
+        "false_positive_rate": 0.021739130434782608,
+        "attack_support": 0,
+        "detected": 0,
+        "recall": 0.0
+      },
+      "it": {
+        "clean_support": 27,
+        "false_positives": 1,
+        "false_positive_rate": 0.037037037037037035,
+        "attack_support": 27,
+        "detected": 12,
+        "recall": 0.4444444444444444
+      },
+      "payment": {
+        "clean_support": 24,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 24,
+        "detected": 8,
+        "recall": 0.3333333333333333
+      },
+      "schedule": {
+        "clean_support": 30,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 30,
+        "detected": 6,
+        "recall": 0.2
+      },
+      "transfer": {
+        "clean_support": 28,
+        "false_positives": 0,
+        "false_positive_rate": 0.0,
+        "attack_support": 28,
+        "detected": 4,
+        "recall": 0.14285714285714285
+      }
+    },
+    "contamination": 0.005,
+    "cv_fpr": {
+      "0.005": 0.006666666666666666,
+      "0.010": 0.010666666666666668,
+      "0.020": 0.028000000000000004,
+      "0.030": 0.034666666666666665,
+      "0.050": 0.05733333333333333
+    },
+    "validation": {
+      "validation_fpr_before": 0.0,
+      "validation_fpr_after": 0.0,
+      "offset_adjusted": 0.0
+    },
+    "test_fpr_on_clean": 0.008,
+    "anomaly_texts_total": 200,
+    "anomaly_texts_detected": 96,
+    "anomaly_texts_recall": 0.48,
+    "feature_names": [
+      "length",
+      "word_count",
+      "average_word_length",
+      "non_alphabetic_share",
+      "uppercase_share",
+      "unique_characters",
+      "shannon_entropy",
+      "punctuation_count",
+      "cyrillic_share",
+      "latin_share",
+      "invisible_characters",
+      "mixed_script_word_share"
+    ]
+  }
+}

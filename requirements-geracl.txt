@@ -1,0 +1,4 @@
+geracl @ git+https://github.com/deepvk/geracl
+loguru
+pytorch-lightning
+torchmetrics

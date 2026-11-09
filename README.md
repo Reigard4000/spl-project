@@ -19,6 +19,7 @@ SPL — слой защиты между пользователем и ML-мод
 - FastAPI API с dependency injection, pydantic-моделями и JSON-ошибками.
 - SQLite-журнал всех решений, включая причину и объяснение блокировки.
 - Streamlit-панель: метрики, фильтры и интерактивная таблица журнала.
+- Отдельный HTML/JS-клиент в `client/` для проверки `/check` и журнала.
 - Скрипты генерации данных, обучения, оценки и расчёта метрик.
 - Обученные детекторы и `models/metrics.json` входят в репозиторий: при
   обычном запуске обучение не требуется.
@@ -144,17 +145,18 @@ adversarial/anomaly-запросов продолжат работать.
 
 ```bash
 make install-geracl # установить официальный backend geracl
-make data      # сгенерировать чистые, аномальные и испорченные тексты
-make train     # обучить детекторы, сохранить pkl и models/metrics.json
-make retrain   # удалить pkl и обучить детекторы заново
-make evaluate  # матрица ошибок и Precision/Recall/F1 на отложенной выборке
-make metrics   # скорость и FPR на чистых текстах
-make run-api   # API на http://127.0.0.1:8000
-make run-ui    # панель на http://127.0.0.1:8501
-make test      # pytest
-make lint      # ruff + mypy
-make clean     # удалить кеши, данные и отчёт, не трогая обученные детекторы
-make clean-models # удалить pkl и models/metrics.json
+make data           # сгенерировать чистые, аномальные и испорченные тексты
+make train          # обучить детекторы, сохранить pkl и models/metrics.json
+make retrain        # удалить pkl и обучить детекторы заново
+make evaluate       # матрица ошибок и Precision/Recall/F1 на отложенной выборке
+make metrics        # скорость и FPR на чистых текстах
+make run-api        # API на http://127.0.0.1:8000
+make run-ui         # панель на http://127.0.0.1:8501
+make run-client     # веб-клиент на http://127.0.0.1:3000
+make test           # pytest
+make lint           # ruff + mypy
+make clean          # удалить кеши, данные и отчёт, не трогая обученные детекторы
+make clean-models   # удалить pkl и models/metrics.json
 ```
 
 `make train` сам вызывает `make data`. Скрипты и Makefile рассчитаны на запуск
@@ -265,6 +267,34 @@ API в одном терминале:
 ```powershell
 .\venv\Scripts\python.exe -m streamlit run src/presentation/ui/streamlit_app.py
 ```
+
+## Веб-клиент
+
+В папке `client/` есть отдельный HTML/JS-клиент для проверки API: отправка
+текста в `/check`, просмотр решения и последних записей журнала. Сторонние
+JS-библиотеки не нужны, для запуска достаточно Python 3.10+.
+
+Сначала запусти API, затем клиент.
+
+Linux/macOS:
+
+```bash
+./run.sh api
+./client/run_client.sh
+```
+
+Windows 10/11:
+
+```cmd
+run.cmd api
+client\run_client.cmd
+```
+
+Клиент откроется на http://127.0.0.1:3000. Порт `3000` выбран специально:
+этот origin уже разрешён в CORS API. Не открывай `client/index.html` через
+`file://` — браузер заблокирует запросы к API.
+
+Подробнее: [client/README.md](client/README.md).
 
 ## API
 
@@ -456,14 +486,14 @@ make lint
 ```powershell
 .\venv\Scripts\python.exe -m pytest
 .\venv\Scripts\python.exe -m ruff check .
-.\venv\Scripts\python.exe -m mypy src scripts data tests
+.\venv\Scripts\python.exe -m mypy src scripts data tests client
 ```
 
 - `pytest` — тесты `CheckService` (чистый текст, adversarial, anomaly, ошибка
   детектора, сохранение журнала) и API через `httpx.AsyncClient` (`/check`,
   `/health`, `/logs`, валидация).
 - `ruff check .` — линтер, длина строки 100.
-- `mypy src scripts data tests` — strict-режим.
+- `mypy src scripts data tests client` — strict-режим.
 
 Тесты не скачивают модель и не требуют pkl-файлов: детекторы и victim-модель
 подменяются заглушками. SQLite в тестах — in-memory с shared cache.
@@ -482,6 +512,15 @@ spl-project/
 ├── run.sh
 ├── run.ps1
 ├── run.cmd
+├── client/
+│   ├── README.md
+│   ├── index.html
+│   ├── app.js
+│   ├── styles.css
+│   ├── server.py
+│   ├── run_client.sh
+│   ├── run_client.ps1
+│   └── run_client.cmd
 ├── data/
 │   ├── generate_data.py
 │   ├── clean_texts.txt          # генерируется
@@ -541,6 +580,7 @@ spl-project/
   ошибки и панель.
 - [docs/technical_specification.md](docs/technical_specification.md) —
   техническое задание на развитие MVP до прототипа и продукта.
+- [client/README.md](client/README.md) — запуск и возможности веб-клиента.
 
 ## Ограничения
 

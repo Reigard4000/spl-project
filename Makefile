@@ -1,7 +1,7 @@
 API_HOST ?= 127.0.0.1
 API_PORT ?= 8000
 
-.PHONY: install install-geracl data train retrain evaluate run-api run-ui metrics test lint clean clean-models
+.PHONY: install install-geracl data train retrain evaluate run-api run-ui run-client metrics test lint clean clean-models
 
 install:
 	python -m pip install --upgrade pip
@@ -27,6 +27,9 @@ run-api:
 run-ui:
 	PYTHONPATH=. streamlit run src/presentation/ui/streamlit_app.py
 
+run-client:
+	python client/server.py
+
 metrics: data
 	python scripts/compute_metrics.py
 
@@ -35,7 +38,7 @@ test:
 
 lint:
 	ruff check .
-	mypy src scripts data tests
+	mypy src scripts data tests client
 
 clean:
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SPL — клиент проверки запросов</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="page-header">
+        <div>
+            <h1>SPL — клиент проверки запросов</h1>
+            <p class="subtitle">
+                Отправляет текст в <code>POST /check</code> и показывает решение
+                Security &amp; Protection Layer.
+            </p>
+        </div>
+    </header>
+
+    <main class="layout">
+        <section class="panel" aria-labelledby="request-title">
+            <h2 id="request-title">Запрос</h2>
+
+            <div class="api-row">
+                <label for="api-url">Адрес API</label>
+                <input id="api-url" type="url" value="http://127.0.0.1:8000"
+                       spellcheck="false" autocomplete="off">
+                <button id="health-btn" type="button">Проверить API</button>
+                <span id="health-status" class="badge muted">не проверен</span>
+            </div>
+
+            <label for="request-text">Текст запроса</label>
+            <textarea id="request-text" rows="7" maxlength="10000"
+                      placeholder="Например: Какие документы нужны для поступления?"></textarea>
+
+            <div class="examples" aria-label="Примеры запросов">
+                <span>Примеры:</span>
+                <button type="button" data-example="clean">Чистый</button>
+                <button type="button" data-example="adversarial">Adversarial</button>
+                <button type="button" data-example="anomaly">Аномалия</button>
+            </div>
+
+            <div class="actions">
+                <button id="send-btn" class="primary" type="button">Проверить</button>
+                <button id="clear-btn" type="button">Очистить</button>
+                <span class="hint">Ctrl+Enter — отправить</span>
+            </div>
+
+            <p id="request-error" class="error" hidden></p>
+            <p class="hint">
+                Первый чистый запрос может занять время: API скачивает модель GeRaCl.
+            </p>
+        </section>
+
+        <section class="panel" aria-labelledby="result-title">
+            <h2 id="result-title">Решение</h2>
+            <div id="decision" class="decision muted">
+                Отправь запрос, чтобы увидеть результат.
+            </div>
+            <div id="decision-details" class="decision-details" hidden></div>
+            <details id="raw-details" hidden>
+                <summary>Сырой JSON</summary>
+                <pre id="raw-json"></pre>
+            </details>
+        </section>
+
+        <section class="panel wide" aria-labelledby="logs-title">
+            <div class="panel-title-row">
+                <h2 id="logs-title">Последние решения</h2>
+                <button id="logs-btn" type="button">Обновить журнал</button>
+            </div>
+            <p id="logs-error" class="error" hidden></p>
+            <div class="table-wrap">
+                <table id="logs-table">
+                    <thead>
+                        <tr>
+                            <th>Время</th>
+                            <th>Статус</th>
+                            <th>Причина</th>
+                            <th>Категория</th>
+                            <th>Текст</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="empty">Журнал ещё не загружен.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer class="page-footer">
+        Клиент работает через HTTP API и не требует сторонних JS-библиотек.
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
